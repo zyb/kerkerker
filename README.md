@@ -160,6 +160,20 @@ kerkerker/
 - SQLite 数据库文件会在每次部署后重置
 - 生产环境建议使用 PostgreSQL 或 MySQL
 
+⚠️ 重要提示
+在 Vercel serverless 环境中使用 SQLite 有以下限制：
+
+数据不持久化：/tmp 目录的内容在函数调用之间不保留
+数据隔离：每个 serverless 函数实例有独立的文件系统
+性能问题：冷启动时需要重新初始化数据库
+建议：对于生产环境，考虑迁移到云数据库：
+
+Vercel Postgres
+PlanetScale (MySQL)
+Supabase (PostgreSQL)
+MongoDB Atlas
+当前修改可以让应用在 Vercel 上运行，但数据会在每次部署或函数实例重启时丢失。
+
 ### 自托管
 
 ```bash

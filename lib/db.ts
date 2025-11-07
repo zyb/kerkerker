@@ -3,8 +3,11 @@ import path from 'path';
 import fs from 'fs';
 
 // 确保 data 目录存在
-const dataDir = path.join(process.cwd(), 'data');
-if (!fs.existsSync(dataDir)) {
+// 在 Vercel 等 serverless 环境中使用 /tmp 目录，因为其他目录是只读的
+const isVercel = process.env.VERCEL === '1';
+const dataDir = isVercel ? '/tmp' : path.join(process.cwd(), 'data');
+
+if (!isVercel && !fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
