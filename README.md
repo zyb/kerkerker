@@ -178,6 +178,6 @@ A: 部分地区可能无法访问豆瓣 API，可以配置代理或使用备用�
 
 如果这个项目对你有帮助，请给个 ⭐️ Star 支持一下！
 
-Made with ❤️ by [Your Name](https://github.com/unilei)
+Made with ❤️ by [unilei](https://github.com/unilei)
 
 </div>
