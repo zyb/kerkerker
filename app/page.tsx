@@ -6,6 +6,7 @@ import { Play, Film, Tv, Drama, Clapperboard, Palette, BookOpen, Star, ChevronLe
 import DoubanCard from "@/components/DoubanCard";
 import { DoubanMovie } from "@/types/douban";
 import { Toast } from "@/components/Toast";
+import Link from "next/link";
 
 // 定义新 API 返回的数据结构
 interface NewApiMovie {
@@ -294,38 +295,44 @@ export default function HomePage() {
               </h1>
             </div>
             {/* 导航链接 - 桌面端 */}
-            <div className="hidden lg:flex items-center space-x-6">
-              <button
-                onClick={() => router.push("/")}
+            <div className="hidden sm:flex items-center space-x-6">
+              <Link
+                href="/"
                 className="text-white hover:text-gray-300 transition-colors text-sm font-medium"
               >
                 首页
-              </button>
-              <button
-                onClick={() => router.push("/movies")}
+              </Link>
+              <Link
+                href="/movies"
                 className="text-gray-400 hover:text-gray-300 transition-colors text-sm"
               >
                 电影
-              </button>
-              <button
-                onClick={() => router.push("/tv")}
+              </Link>
+              <Link
+                href="/tv"
                 className="text-gray-400 hover:text-gray-300 transition-colors text-sm"
               >
                 电视剧
-              </button>
-              <button
-                onClick={() => router.push("/latest")}
+              </Link>
+              <Link
+                href="/latest"
                 className="text-gray-400 hover:text-gray-300 transition-colors text-sm"
               >
                 最新
-              </button>
-              <a
+              </Link>
+              <Link
+                href="/dailymotion"
+                className="text-gray-400 hover:text-gray-300 transition-colors text-sm"
+              >
+                短剧Motion
+              </Link>
+              <Link
                 href="https://github.com/unilei/kerkerker"
                 target="_blank"
                 className="text-gray-400 hover:text-gray-300 transition-colors text-sm"
               >
                 Github
-              </a>
+              </Link>
             </div>
           </div>
 

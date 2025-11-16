@@ -7,9 +7,11 @@ import { Toast, ConfirmDialog } from '@/components/Toast';
 import type { PlayerConfig } from '@/app/api/player-config/route';
 import { VodSourcesTab } from '@/components/admin/VodSourcesTab';
 import { PlayerConfigTab } from '@/components/admin/PlayerConfigTab';
+import { DailymotionChannelsTab } from '@/components/admin/DailymotionChannelsTab';
 import type { ToastState, ConfirmState } from '@/components/admin/types';
+import type { DailymotionChannelConfig } from '@/types/dailymotion-config';
 
-type TabType = 'sources' | 'player';
+type TabType = 'sources' | 'player' | 'dailymotion';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -17,6 +19,8 @@ export default function SettingsPage() {
   const [sources, setSources] = useState<VodSource[]>([]);
   const [selectedKey, setSelectedKey] = useState<string>('');
   const [playerConfig, setPlayerConfig] = useState<PlayerConfig | null>(null);
+  const [dailymotionChannels, setDailymotionChannels] = useState<DailymotionChannelConfig[]>([]);
+  const [defaultChannelId, setDefaultChannelId] = useState<string | undefined>();
   const [toast, setToast] = useState<ToastState | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
 
@@ -36,6 +40,14 @@ export default function SettingsPage() {
         
         if (playerResult.code === 200 && playerResult.data) {
           setPlayerConfig(playerResult.data);
+        }
+
+        const dailymotionResponse = await fetch('/api/dailymotion-config');
+        const dailymotionResult = await dailymotionResponse.json();
+        
+        if (dailymotionResult.code === 200 && dailymotionResult.data) {
+          setDailymotionChannels(dailymotionResult.data.channels || []);
+          setDefaultChannelId(dailymotionResult.data.defaultChannelId);
         }
       } catch (error) {
         setToast({ message: error instanceof Error ? error.message : '加载配置失败', type: 'error' });
@@ -57,7 +69,8 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'sources' as TabType, name: '视频源管理', icon: '📺' },
-    { id: 'player' as TabType, name: '播放器设置', icon: '▶️' }
+    { id: 'player' as TabType, name: '播放器设置', icon: '▶️' },
+    { id: 'dailymotion' as TabType, name: 'Dailymotion', icon: '🎬' }
   ];
 
   return (
@@ -119,6 +132,19 @@ export default function SettingsPage() {
           <PlayerConfigTab
             playerConfig={playerConfig}
             onConfigChange={setPlayerConfig}
+            onShowToast={setToast}
+            onShowConfirm={setConfirm}
+          />
+        )}
+
+        {activeTab === 'dailymotion' && (
+          <DailymotionChannelsTab
+            channels={dailymotionChannels}
+            defaultChannelId={defaultChannelId}
+            onChannelsChange={(channels, defaultId) => {
+              setDailymotionChannels(channels);
+              setDefaultChannelId(defaultId);
+            }}
             onShowToast={setToast}
             onShowConfirm={setConfirm}
           />
