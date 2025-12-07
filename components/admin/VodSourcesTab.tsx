@@ -21,6 +21,8 @@ export function VodSourcesTab({
     name: '',
     api: '',
     playUrl: '',
+    usePlayUrl: true,
+    priority: 0,
     type: 'json',
   });
 
@@ -73,6 +75,8 @@ export function VodSourcesTab({
       name: '',
       api: '',
       playUrl: '',
+      usePlayUrl: true,
+      priority: sources.length,  // 默认排在最后
       type: 'json',
     });
     setIsAddMode(true);
@@ -129,13 +133,9 @@ export function VodSourcesTab({
   };
 
   const handleSave = async () => {
-    if (
-      !formData.key ||
-      !formData.name ||
-      !formData.api ||
-      !formData.playUrl
-    ) {
-      onShowToast({ message: '请填写完整信息', type: 'warning' });
+    // playUrl 是可选的，不需要必填
+    if (!formData.key || !formData.name || !formData.api) {
+      onShowToast({ message: '请填写 Key、名称和 API 地址', type: 'warning' });
       return;
     }
 
@@ -281,35 +281,50 @@ export function VodSourcesTab({
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              播放地址
+              播放地址 <span className="text-slate-500 font-normal">(可选)</span>
             </label>
             <input
               type="text"
-              value={formData.playUrl}
+              value={formData.playUrl || ''}
               onChange={(e) =>
                 setFormData({ ...formData, playUrl: e.target.value })
               }
               className="w-full px-4 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="https://..."
+              placeholder="留空则直接使用原始播放链接"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">
-              类型
+              优先级 <span className="text-slate-500 font-normal">(数值越小优先级越高)</span>
             </label>
-            <select
-              value={formData.type}
+            <input
+              type="number"
+              value={formData.priority ?? 0}
               onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  type: e.target.value as 'json' | 'xml',
-                })
+                setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })
               }
+              min={0}
               className="w-full px-4 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="json">JSON</option>
-              <option value="xml">XML</option>
-            </select>
+              placeholder="0"
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={formData.usePlayUrl ?? true}
+                onChange={(e) =>
+                  setFormData({ ...formData, usePlayUrl: e.target.checked })
+                }
+                className="w-5 h-5 rounded bg-slate-900/50 border-slate-600 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+              />
+              <span className="text-sm text-slate-300">
+                使用播放地址解析
+                <span className="text-slate-500 ml-2">
+                  (关闭则直接播放原始 m3u8 链接)
+                </span>
+              </span>
+            </label>
           </div>
         </div>
         <div className="flex gap-3 mt-6">
@@ -344,6 +359,9 @@ export function VodSourcesTab({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs px-2 py-1 bg-slate-600 text-slate-300 rounded font-mono">
+                      #{source.priority ?? 0}
+                    </span>
                     <h3 className="text-lg font-semibold text-white">
                       {source.name}
                     </h3>
@@ -358,8 +376,17 @@ export function VodSourcesTab({
                   </div>
                   <div className="text-sm text-slate-400 space-y-1">
                     <p>API: {source.api}</p>
-                    <p>播放: {source.playUrl}</p>
-                    <p>类型: {source.type.toUpperCase()}</p>
+                    {source.playUrl && (
+                      <p>
+                        播放: {source.playUrl}
+                        {source.usePlayUrl === false && (
+                          <span className="ml-2 text-yellow-500">(未启用)</span>
+                        )}
+                      </p>
+                    )}
+                    {!source.playUrl && (
+                      <p className="text-slate-500">播放: 直接使用原始链接</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 ml-4">

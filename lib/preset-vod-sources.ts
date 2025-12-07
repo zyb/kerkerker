@@ -1,12 +1,25 @@
 import { VodSource } from "@/types/drama";
 
 // 可导入的预设VOD源配置（纯数据，客户端安全）
+// usePlayUrl: true 表示使用播放地址解析，false 表示直接播放原始链接
+// priority: 数值越小优先级越高，用于排序
 export const presetVodSources: VodSource[] = [
   {
     key: "rycjapi",
     name: "如意资源站",
     api: "https://cj.rycjapi.com/api.php/provide/vod",
     playUrl: "https://ryplayer.com?url=",
+    usePlayUrl: true,
+    priority: 1,
+    type: "json",
+  },
+  {
+    key: "liangzizy",
+    name: "量子资源",
+    api: "https://cj.lziapi.com/api.php/provide/vod",
+    playUrl: "https://lziplayer.com/?url=",
+    usePlayUrl: true,
+    priority: 2,
     type: "json",
   },
   {
@@ -14,6 +27,8 @@ export const presetVodSources: VodSource[] = [
     name: "红牛资源",
     api: "https://www.hongniuzy2.com/api.php/provide/vod/from/hnm3u8",
     playUrl: "https://www.hnjiexi.com/m3u8/?url=",
+    usePlayUrl: true,
+    priority: 3,
     type: "json",
   },
   {
@@ -21,13 +36,8 @@ export const presetVodSources: VodSource[] = [
     name: "虎牙资源",
     api: "https://www.huyaapi.com/api.php/provide/vod/from/hym3u8/at/json",
     playUrl: "https://huyajx.com/play/?url=",
-    type: "json",
-  },
-  {
-    key: "iqiyizy",
-    name: "爱奇艺资源【国内直连】",
-    api: "https://www.iqiyizyapi.com/api.php/provide/vod",
-    playUrl: "https://www.iqiyizyjx.com/?url=",
+    usePlayUrl: true,
+    priority: 4,
     type: "json",
   },
   {
@@ -35,13 +45,17 @@ export const presetVodSources: VodSource[] = [
     name: "豆瓣资源",
     api: "https://caiji.dbzy5.com/api.php/provide/vod/from/dbm3u8/at/josn",
     playUrl: "https://www.dbjiexi.com:966/jx/?url=",
+    usePlayUrl: true,
+    priority: 5,
     type: "json",
   },
   {
     key: "hhzy",
-    name: "豪华资源 ",
+    name: "豪华资源",
     api: "https://hhzyapi.com/api.php/provide/vod/from/hhm3u8/at/json",
     playUrl: "https://hhjiexi.com/play/?url=",
+    usePlayUrl: true,
+    priority: 6,
     type: "json",
   },
   {
@@ -49,6 +63,8 @@ export const presetVodSources: VodSource[] = [
     name: "魔都资源网",
     api: "https://www.mdzyapi.com/api.php/provide/vod",
     playUrl: "https://jiexi.modujx01.com/?url=",
+    usePlayUrl: true,
+    priority: 7,
     type: "json",
   },
   {
@@ -56,6 +72,8 @@ export const presetVodSources: VodSource[] = [
     name: "速播资源",
     api: "https://subocj.com/api.php/provide/vod/from/subm3u8/at/json",
     playUrl: "https://subojiexi.com/play/?url=",
+    usePlayUrl: false,
+    priority: 8,
     type: "json",
   },
   {
@@ -63,6 +81,8 @@ export const presetVodSources: VodSource[] = [
     name: "iKun资源",
     api: "https://ikunzyapi.com/api.php/provide/vod",
     playUrl: "https://www.ikdmjx.com/?url=",
+    usePlayUrl: true,
+    priority: 9,
     type: "json",
   },
   {
@@ -70,27 +90,35 @@ export const presetVodSources: VodSource[] = [
     name: "金鹰资源",
     api: "https://jyzyapi.com/provide/vod/from/jinyingm3u8/at/json",
     playUrl: "https://hd.iapijy.com/play?url=",
+    usePlayUrl: true,
+    priority: 10,
     type: "json",
   },
   {
     key: "xinlangzy",
     name: "新浪资源",
-    api: "https://api.xinlangapi.com/xinlangapi.php/provide/vod/from/xlm3u8/at/xml/",
+    api: "https://api.xinlangapi.com/xinlangapi.php/provide/vod/from/xlm3u8/at/json/",
     playUrl: "https://www.xinlangjiexi.com/m3u8/?url=",
-    type: "xml",
+    usePlayUrl: true,
+    priority: 11,
+    type: "json",
   },
   {
     key: "guangsuzy",
     name: "光速资源",
-    api: "https://api.guangsuapi.com/api.php/provide/vod/from/gsm3u8/at/xml/",
+    api: "https://api.guangsuapi.com/api.php/provide/vod/from/gsm3u8/at/json/",
     playUrl: "https://www.gszyv.com/m3u8/?url=",
-    type: "xml",
+    usePlayUrl: true,
+    priority: 12,
+    type: "json",
   },
   {
     key: "shanhaizy",
     name: "山海资源",
     api: "https://zy.sh0o.cn/api.php/provide/vod/at/json",
     playUrl: "https://im1907.top/?jx=",
+    usePlayUrl: true,
+    priority: 13,
     type: "json",
   },
   {
@@ -98,6 +126,8 @@ export const presetVodSources: VodSource[] = [
     name: "猫眼资源",
     api: "https://api.maoyanapi.top/api.php/provide/vod/from/mym3u8/at/json",
     playUrl: "https://jx.maoyanjx.top/player/?url=",
+    usePlayUrl: true,
+    priority: 14,
     type: "json",
   },
   {
@@ -105,6 +135,8 @@ export const presetVodSources: VodSource[] = [
     name: "茅台资源",
     api: "https://caiji.maotaizy.cc/api.php/provide/vod/from/mtm3u8/at/josn",
     playUrl: "https://www.mtjiexi.cc:966/?url=",
+    usePlayUrl: true,
+    priority: 15,
     type: "json",
   },
   {
@@ -112,6 +144,8 @@ export const presetVodSources: VodSource[] = [
     name: "U酷资源网",
     api: "https://api.ukuapi88.com/api.php/provide/vod",
     playUrl: "https://api.ukubf.com/m3u8/?url=",
+    usePlayUrl: true,
+    priority: 16,
     type: "json",
   },
   {
@@ -119,6 +153,8 @@ export const presetVodSources: VodSource[] = [
     name: "暴风资源",
     api: "https://bfzyapi.com/api.php/provide/vod",
     playUrl: "https://vip.vipuuvip.com/?url=",
+    usePlayUrl: true,
+    priority: 17,
     type: "json",
   },
   {
@@ -126,6 +162,8 @@ export const presetVodSources: VodSource[] = [
     name: "360资源",
     api: "https://360zy.com/api.php/provide/vod",
     playUrl: "https://www.360jiexi.com/player/?url=",
+    usePlayUrl: true,
+    priority: 18,
     type: "json",
   },
   {
@@ -133,6 +171,8 @@ export const presetVodSources: VodSource[] = [
     name: "卧龙资源",
     api: "https://collect.wolongzy.cc/api.php/provide/vod/",
     playUrl: "https://jx.wolongzywcdn.com:65/m3u8.php?url=",
+    usePlayUrl: true,
+    priority: 19,
     type: "json",
   },
   {
@@ -140,6 +180,8 @@ export const presetVodSources: VodSource[] = [
     name: "极速资源",
     api: "https://jszyapi.com/api.php/provide/vod/from/jsm3u8/at/json",
     playUrl: "https://jsjiexi.com/play/?url=",
+    usePlayUrl: true,
+    priority: 20,
     type: "json",
   },
 ];

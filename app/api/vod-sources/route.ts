@@ -60,11 +60,11 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // 验证每个视频源的必要字段
+    // 验证每个视频源的必要字段（playUrl 是可选的）
     for (const source of sources) {
-      if (!source.key || !source.name || !source.api || !source.playUrl || !source.type) {
+      if (!source.key || !source.name || !source.api || !source.type) {
         return NextResponse.json(
-          { code: 400, message: '视频源缺少必要字段', data: null },
+          { code: 400, message: '视频源缺少必要字段（key、name、api、type）', data: null },
           { status: 400 }
         );
       }

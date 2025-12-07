@@ -26,7 +26,9 @@ export function PlayerSettingsPanel({
 
   // 切换到iframe模式时，自动选择视频源的专属播放器
   const handleModeChange = (mode: 'iframe' | 'local') => {
-    if (mode === 'iframe' && vodSource?.playUrl) {
+    // 检查视频源是否启用了播放地址解析（usePlayUrl 默认为 true）
+    const shouldUsePlayUrl = vodSource?.playUrl && (vodSource.usePlayUrl !== false);
+    if (mode === 'iframe' && shouldUsePlayUrl) {
       // 视频源专属播放器始终在第一位（索引0）
       onIframePlayerChange(0);
     }
@@ -67,14 +69,24 @@ export function PlayerSettingsPanel({
     };
   }, [isOpen]);
 
+  // 检查是否禁用了解析接口（usePlayUrl: false 表示直接播放原始链接）
+  const disableParseUrl = vodSource?.usePlayUrl === false;
+  
   // 计算实际启用的播放器列表（与IframePlayer.tsx保持一致）
   const enabledIframePlayers = (() => {
+    // 如果禁用了解析接口，返回空数组
+    if (disableParseUrl) {
+      return [];
+    }
+    
     const backupPlayers = playerConfig.iframePlayers
       .filter(p => p.enabled)
       .sort((a, b) => a.priority - b.priority);
     
-    // 如果视频源有专属播放器，添加到第一位（与IframePlayer逻辑一致）
-    if (vodSource?.playUrl) {
+    // 检查视频源是否有专属播放器（usePlayUrl 默认为 true）
+    const shouldUsePlayUrl = vodSource?.playUrl && (vodSource.usePlayUrl !== false);
+    
+    if (shouldUsePlayUrl && vodSource?.playUrl) {
       const vodSourcePlayer = {
         id: `vod_source_${vodSource.key}`,
         name: `${vodSource.name}播放器`,
@@ -224,6 +236,30 @@ export function PlayerSettingsPanel({
                 </button>
               </div>
             </div>
+
+            {/* 直接播放模式提示 (usePlayUrl: false) */}
+            {currentMode === 'iframe' && disableParseUrl && (
+              <div className="p-4 border-b border-gray-800">
+                <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                  播放模式
+                </h4>
+                <div className="p-4 bg-gradient-to-r from-green-600/20 to-teal-600/20 border border-green-500/30 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="shrink-0 w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-medium">直接播放</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        不使用解析接口，直接播放原始视频链接
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 当前使用的播放器 */}
             {currentMode === 'iframe' && enabledIframePlayers.length > 0 && (

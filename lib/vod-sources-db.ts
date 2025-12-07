@@ -6,8 +6,10 @@ export interface VodSourceDoc {
   key: string;
   name: string;
   api: string;
-  play_url: string;
-  type: string;
+  play_url?: string;      // 播放地址前缀
+  use_play_url?: boolean; // 是否使用播放地址
+  priority?: number;      // 优先级，数值越小优先级越高
+  type: 'json';           // 仅支持 JSON
   enabled: boolean;
   sort_order: number;
   created_at: number;
@@ -21,31 +23,33 @@ function docToVodSource(doc: VodSourceDoc): VodSource {
     name: doc.name,
     api: doc.api,
     playUrl: doc.play_url,
-    type: doc.type as 'json' | 'xml',
+    usePlayUrl: doc.use_play_url ?? true,
+    priority: doc.priority ?? 0,
+    type: 'json',
   };
 }
 
-// 获取所有启用的视频源
+// 获取所有启用的视频源（按 priority 排序，数值越小优先级越高）
 export async function getVodSourcesFromDB(): Promise<VodSource[]> {
   const db = await getDatabase();
   const collection = db.collection<VodSourceDoc>('vod_sources');
   
   const docs = await collection
     .find({ enabled: true })
-    .sort({ sort_order: 1, _id: 1 })
+    .sort({ priority: 1, sort_order: 1, _id: 1 })
     .toArray();
   
   return docs.map(docToVodSource);
 }
 
-// 获取所有视频源（包括禁用的）
+// 获取所有视频源（包括禁用的，按 priority 排序）
 export async function getAllVodSourcesFromDB(): Promise<VodSourceDoc[]> {
   const db = await getDatabase();
   const collection = db.collection<VodSourceDoc>('vod_sources');
   
   const docs = await collection
     .find()
-    .sort({ sort_order: 1, _id: 1 })
+    .sort({ priority: 1, sort_order: 1, _id: 1 })
     .toArray();
   
   return docs;
@@ -62,6 +66,8 @@ export async function saveVodSourceToDB(source: VodSource & { enabled?: boolean;
     name: source.name,
     api: source.api,
     play_url: source.playUrl,
+    use_play_url: source.usePlayUrl ?? true,
+    priority: source.priority ?? 0,
     type: source.type,
     enabled: source.enabled !== undefined ? source.enabled : true,
     sort_order: source.sortOrder || 0,
@@ -94,6 +100,8 @@ export async function saveVodSourcesToDB(sources: VodSource[]) {
     name: source.name,
     api: source.api,
     play_url: source.playUrl,
+    use_play_url: source.usePlayUrl ?? true,
+    priority: source.priority ?? index,
     type: source.type,
     enabled: true,
     sort_order: index,

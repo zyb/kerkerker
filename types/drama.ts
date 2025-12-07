@@ -40,8 +40,10 @@ export interface VodSource {
   key: string;
   name: string;
   api: string;
-  playUrl: string;
-  type: 'json' | 'xml';
+  playUrl?: string;      // 播放地址前缀
+  usePlayUrl?: boolean;  // 是否使用播放地址（默认 true，如果有 playUrl）
+  priority?: number;     // 优先级，数值越小优先级越高（默认 0）
+  type: 'json';          // 仅支持 JSON 格式
 }
 
 export interface ApiResponse<T = unknown> {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Play, Star, Loader2, AlertCircle, RefreshCw, Clock, MapPin, Users, Clapperboard } from "lucide-react";
+import { ArrowLeft, Play, Star, Loader2, AlertCircle, RefreshCw, Clock, MapPin, Users, Clapperboard, ImageIcon, MessageCircle, Film } from "lucide-react";
 import Link from "next/link";
 import { getImageUrl } from "@/lib/utils/image-utils";
 import { cleanTitleForSearch } from "@/lib/utils/title-utils";
@@ -14,6 +14,7 @@ interface AvailableSource {
   vod_id: string | number;
   vod_name: string;
   match_confidence: "high" | "medium" | "low";
+  priority: number;  // 视频源优先级，数值越小越靠前
 }
 
 interface CachedMatchData {
@@ -41,6 +42,25 @@ interface MovieDetail {
     content: string;
     author: string;
   };
+  // 新增字段 - 来自增强的API
+  photos?: Array<{
+    id: string;
+    image: string;
+    thumb: string;
+  }>;
+  comments?: Array<{
+    id: string;
+    content: string;
+    author: {
+      name: string;
+    };
+  }>;
+  recommendations?: Array<{
+    id: string;
+    title: string;
+    cover: string;
+    rate: string;
+  }>;
 }
 
 type SearchStatus = "idle" | "searching" | "success" | "error" | "not_found";
@@ -103,6 +123,10 @@ export default function MovieDetailPage() {
                 release_year: apiData.release_year || cachedData.release_year || '',
                 episodes_count: cachedData.episodes_count || apiData.episodes_count || '',
                 short_comment: apiData.short_comment || cachedData.short_comment,
+                // 新增字段
+                photos: apiData.photos || [],
+                comments: apiData.comments || [],
+                recommendations: apiData.recommendations || [],
               };
             });
           }
@@ -205,8 +229,13 @@ export default function MovieDetailPage() {
                 // 如果找到匹配，立即添加到列表
                 if (data.match) {
                   allMatches.push(data.match);
-                  // 按置信度排序：high > medium > low
+                  // 按优先级排序（数值越小越靠前），同优先级按置信度排序
                   const sorted = [...allMatches].sort((a, b) => {
+                    // 先按 priority 排序
+                    if (a.priority !== b.priority) {
+                      return a.priority - b.priority;
+                    }
+                    // 同 priority 按置信度排序：high > medium > low
                     const order = { high: 3, medium: 2, low: 1 };
                     return order[b.match_confidence] - order[a.match_confidence];
                   });
@@ -477,6 +506,51 @@ export default function MovieDetailPage() {
                   <p className="text-gray-500 text-xs mt-2">—— {movieDetail.short_comment.author}</p>
                 </div>
               )}
+
+              {/* 剧照 */}
+              {movieDetail?.photos && movieDetail.photos.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <ImageIcon className="w-5 h-5 text-blue-400" />
+                    剧照
+                  </h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    {movieDetail.photos.slice(0, 6).map((photo) => (
+                      <a
+                        key={photo.id}
+                        href={photo.image}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="aspect-video rounded-lg overflow-hidden bg-white/5 hover:opacity-80 transition-opacity"
+                      >
+                        <img
+                          src={getImageUrl(photo.thumb || photo.image)}
+                          alt="剧照"
+                          className="w-full h-full object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 热门短评 */}
+              {movieDetail?.comments && movieDetail.comments.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-green-400" />
+                    热门短评
+                  </h3>
+                  <div className="space-y-3">
+                    {movieDetail.comments.slice(0, 3).map((comment) => (
+                      <div key={comment.id} className="bg-white/5 rounded-lg p-3 border border-white/5">
+                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-3">{comment.content}</p>
+                        <p className="text-gray-500 text-xs mt-2">—— {comment.author.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 播放源区域 */}
@@ -600,6 +674,40 @@ export default function MovieDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* 相关推荐 */}
+        {movieDetail?.recommendations && movieDetail.recommendations.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <Film className="w-6 h-6 text-red-500" />
+              相关推荐
+            </h2>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+              {movieDetail.recommendations.map((rec) => (
+                <Link
+                  key={rec.id}
+                  href={`/movie/${rec.id}`}
+                  className="group"
+                >
+                  <div className="aspect-2/3 rounded-xl overflow-hidden bg-white/5 mb-2 border border-white/5 group-hover:border-red-500/50 transition-colors">
+                    <img
+                      src={getImageUrl(rec.cover)}
+                      alt={rec.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <h3 className="text-sm text-white font-medium line-clamp-1 group-hover:text-red-400 transition-colors">{rec.title}</h3>
+                  {rec.rate && (
+                    <div className="flex items-center gap-1 text-xs text-yellow-400 mt-1">
+                      <Star className="w-3 h-3 fill-current" />
+                      {rec.rate}
+                    </div>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
       )}
     </div>

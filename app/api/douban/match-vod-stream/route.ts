@@ -17,6 +17,7 @@ interface MatchResult {
   vod_id: string | number;
   vod_name: string;
   match_confidence: 'high' | 'medium' | 'low';
+  priority: number;  // 视频源优先级
 }
 
 // 计算匹配置信度
@@ -90,6 +91,7 @@ async function searchSingleSource(
           vod_id: bestMatch.id,
           vod_name: bestMatch.name,
           match_confidence: getMatchConfidence(bestMatch.name, title),
+          priority: source.priority ?? 999,  // 未设置优先级的排在最后
         };
       }
     }

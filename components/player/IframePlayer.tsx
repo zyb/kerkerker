@@ -55,10 +55,20 @@ export function IframePlayer({
     [players]
   );
   
+  // 检查是否禁用了解析接口（usePlayUrl: false 表示直接播放原始链接）
+  const disableParseUrl = vodSource?.usePlayUrl === false;
+  
   // 过滤启用的播放器并按优先级排序
   const enabledPlayers = useMemo(() => {
-    // 如果视频源有专属播放器，优先使用，并把通用播放器放在后面作为备选
-    if (vodSource?.playUrl) {
+    // 如果禁用了解析接口，返回空数组（将直接播放原始链接）
+    if (disableParseUrl) {
+      return [];
+    }
+    
+    // 检查视频源是否有专属播放器（usePlayUrl 默认为 true）
+    const shouldUsePlayUrl = vodSource?.playUrl && (vodSource.usePlayUrl !== false);
+    
+    if (shouldUsePlayUrl && vodSource?.playUrl) {
       const vodSourcePlayer: IframePlayerConfig = {
         id: `vod_source_${vodSource.key}`,
         name: `${vodSource.name}播放器`,
@@ -72,11 +82,13 @@ export function IframePlayer({
     }
     
     return backupPlayers;
-  }, [vodSource, backupPlayers]);
+  }, [vodSource, backupPlayers, disableParseUrl]);
 
   const currentPlayer = enabledPlayers[currentPlayerIndex];
-  const playerUrl = currentPlayer ? 
-    currentPlayer.url + encodeURIComponent(videoUrl) : '';
+  // 如果禁用解析接口，直接使用原始视频链接；否则使用解析接口+视频链接
+  const playerUrl = disableParseUrl 
+    ? videoUrl 
+    : (currentPlayer ? currentPlayer.url + encodeURIComponent(videoUrl) : '');
 
   // 播放器健康检查
   const startHealthCheck = useCallback(() => {
@@ -244,7 +256,8 @@ export function IframePlayer({
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  if (!currentPlayer) {
+  // 当没有可用播放器且不是直接播放模式时，显示错误
+  if (!currentPlayer && !disableParseUrl) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-black">
         <p className="text-white">没有可用的播放器</p>
@@ -260,11 +273,13 @@ export function IframePlayer({
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-700 border-t-red-600 mx-auto mb-4" />
             <p className="text-white text-lg mb-2">
-              正在加载 {currentPlayer.name}...
+              {disableParseUrl ? '正在加载视频...' : `正在加载 ${currentPlayer?.name}...`}
             </p>
-            <p className="text-gray-400 text-sm">
-              尝试 {loadAttempts + 1} / {enabledPlayers.length}
-            </p>
+            {!disableParseUrl && (
+              <p className="text-gray-400 text-sm">
+                尝试 {loadAttempts + 1} / {enabledPlayers.length}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -279,7 +294,7 @@ export function IframePlayer({
           allowFullScreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
-          title={`播放器 - ${currentPlayer.name}`}
+          title={disableParseUrl ? '直接播放' : `播放器 - ${currentPlayer?.name}`}
           onLoad={handleIframeLoad}
           onError={handleIframeError}
         />
@@ -294,10 +309,18 @@ export function IframePlayer({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h3 className="text-white text-xl font-bold mb-2">播放器加载失败</h3>
+            <h3 className="text-white text-xl font-bold mb-2">
+              {disableParseUrl ? '视频加载失败' : '播放器加载失败'}
+            </h3>
             <p className="text-gray-400 text-sm mb-6">
-              已尝试 {Math.min(loadAttempts + 1, enabledPlayers.length)} / {enabledPlayers.length} 个播放器
-              {enabledPlayers.length > 3 && <span className="block mt-1 text-gray-500 text-xs">（为节省时间，最多尝试3个）</span>}
+              {disableParseUrl ? (
+                <span>无法直接播放此视频，可能是跨域限制或视频源不支持</span>
+              ) : (
+                <>
+                  已尝试 {Math.min(loadAttempts + 1, enabledPlayers.length)} / {enabledPlayers.length} 个播放器
+                  {enabledPlayers.length > 3 && <span className="block mt-1 text-gray-500 text-xs">（为节省时间，最多尝试3个）</span>}
+                </>
+              )}
               <span className="block mt-2">建议：尝试切换视频源或稍后重试</span>
             </p>
             <div className="space-y-3">
