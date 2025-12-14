@@ -6,11 +6,13 @@
 
 - [功能特性](#-功能特性)
 - [界面预览](#-界面预览)
-- [快速开始](#-快速开始)
+- [一键部署](#-一键部署)
+- [快速开始（开发者）](#-快速开始开发者)
 - [环境配置](#-环境配置)
 - [豆瓣 API 代理](#-豆瓣-api-代理)
 - [Docker 部署](#-docker-部署)
 - [本地开发](#-本地开发)
+- [项目结构](#-项目结构)
 
 ## ✨ 功能特性
 
@@ -47,11 +49,59 @@
 
 ![播放页](screenshot/movie-playing.png)
 
-## 🚀 快速开始
+## 🚀 一键部署
+
+只需一行命令，即可在任何装有 Docker 的服务器上完成部署：
+
+```bash
+# 使用 curl
+curl -fsSL https://raw.githubusercontent.com/unilei/kerkerker/main/scripts/install.sh | bash
+
+# 或使用 wget
+wget -qO- https://raw.githubusercontent.com/unilei/kerkerker/main/scripts/install.sh | bash
+```
+
+### 部署流程
+
+脚本会引导您完成以下配置：
+
+1. **安装目录** - 默认 `~/kerkerker`
+2. **应用端口** - 默认 `3000`
+3. **镜像版本** - 默认 `latest`
+4. **管理员密码** - 用于后台登录
+5. **TMDB API Key** - 可选，用于获取影视信息
+
+### 部署后管理
+
+```bash
+cd ~/kerkerker
+
+./kerkerker.sh start    # 启动服务
+./kerkerker.sh stop     # 停止服务
+./kerkerker.sh restart  # 重启服务
+./kerkerker.sh logs     # 查看日志
+./kerkerker.sh update   # 更新到最新版本
+./kerkerker.sh status   # 查看运行状态
+./kerkerker.sh backup   # 备份数据
+```
+
+### 修改配置
+
+```bash
+# 编辑配置文件
+nano ~/kerkerker/.env
+
+# 重启服务使配置生效
+./kerkerker.sh restart
+```
+
+---
+
+## 🛠 快速开始（开发者）
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-repo/kerkerker.git
+git clone https://github.com/unilei/kerkerker.git
 cd kerkerker
 
 # 2. 复制环境配置
@@ -163,7 +213,7 @@ MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/kerkerker
    DOUBAN_API_PROXY=https://douban-proxy.your-account.workers.dev
    ```
 
-### 方式二：手动部署
+### 手动部署豆瓣代理
 
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
 2. 进入 **Workers & Pages** → **Create Application** → **Create Worker**
@@ -175,7 +225,13 @@ MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/kerkerker
 
 ## 🐳 Docker 部署
 
-### 1. 构建并推送镜像（开发者）
+### 方式一：一键部署（推荐）
+
+参考上方 [一键部署](#-一键部署) 章节。
+
+### 方式二：手动部署
+
+#### 1. 构建并推送镜像（开发者）
 
 ```bash
 # 构建多架构镜像并推送到 Docker Hub
@@ -188,7 +244,7 @@ npm run server:deploy
 - 创建多架构构建器（amd64/arm64）
 - 构建镜像并推送
 
-### 2. 服务器部署
+#### 2. 服务器部署
 
 **准备文件**：
 
@@ -274,12 +330,18 @@ kerkerker/
 ├── lib/                    # 工具函数和数据库连接
 ├── hooks/                  # React Hooks
 ├── types/                  # TypeScript 类型定义
-├── docs/                   # 文档和脚本
+├── docs/                   # 文档
 │   └── cloudflare-douban-proxy.js  # 豆瓣代理 Worker 代码
 ├── scripts/                # 部署脚本
-│   ├── deploy-server.sh    # Docker 构建部署
+│   ├── install.sh          # 一键部署脚本 (curl/wget)
+│   ├── deploy.sh           # 简化部署脚本
+│   ├── deploy-server.sh    # 交互式部署脚本
 │   └── deploy-douban-proxy.sh  # 豆瓣代理部署
-└── docker-compose*.yml     # Docker 编排文件
+├── Dockerfile              # 生产环境 Dockerfile
+├── Dockerfile.dev          # 开发环境 Dockerfile
+├── docker-compose.yml      # 本地开发环境
+├── docker-compose.dev.yml  # 开发环境（热重载）
+└── docker-compose.server.yml  # 生产服务器部署
 ```
 
 ## 📜 License
