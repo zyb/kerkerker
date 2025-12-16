@@ -26,9 +26,18 @@ function parseEpisodes(playUrl: string): Episode[] {
 
   try {
     // 解析剧集列表
-    // 格式通常为: 第1集$url1#第2集$url2#...
+    // 格式通常为: 播放源1$$$播放源2$$$...
+    // 每个播放源内部: 第1集$url1#第2集$url2#...
+    const sources = playUrl.split('$$$').filter(Boolean);
+    
+    // 优先使用包含m3u8的播放源
+    const m3u8Source = sources.find(source => source.includes('.m3u8'));
+    const targetSource = m3u8Source || sources[0];
+    
+    if (!targetSource) return [];
+    
     const episodes: Episode[] = [];
-    const episodeList = playUrl.split('#').filter(Boolean);
+    const episodeList = targetSource.split('#').filter(Boolean);
 
     for (const episode of episodeList) {
       const [name, url] = episode.split('$');
