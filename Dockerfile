@@ -28,20 +28,29 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # ==================== 阶段 3: 运行应用 ====================
-# 使用 MongoDB 官方镜像作为基础，然后安装 Node.js
-FROM mongo:7 AS mongo-base
+# 使用 Node.js 20 作为基础，然后安装 MongoDB 和 Redis
+FROM node:20-slim AS runner-base
 
-# 安装 Node.js 20、Redis 和 supervisor
+# 安装 MongoDB、Redis 和 supervisor
 RUN apt-get update && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
     apt-get install -y \
-    nodejs \
+    gnupg \
+    curl \
+    ca-certificates \
+    && curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor && \
+    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list && \
+    apt-get update && \
+    apt-get install -y \
+    mongodb-org \
     redis-server \
     supervisor \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && \
+    echo "=== 验证 Node.js 版本 ===" && \
+    node --version && \
+    npm --version && \
+    which node
 
-FROM mongo-base AS runner
+FROM runner-base AS runner
 WORKDIR /app
 
 # 设置环境变量
@@ -82,7 +91,10 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # 设置权限
 RUN chown -R nextjs:nodejs /app && \
     chown -R redis:redis /var/lib/redis 2>/dev/null || true && \
-    chmod +x /usr/local/bin/docker-entrypoint.sh
+    chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    echo "=== 最终验证 Node.js 版本 ===" && \
+    node --version && \
+    npm --version
 
 # 暴露端口（只暴露主服务端口）
 EXPOSE 3000
