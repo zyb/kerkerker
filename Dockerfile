@@ -48,6 +48,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 
 # 创建必要的目录和用户
 RUN mkdir -p /var/lib/redis \
@@ -60,9 +61,19 @@ RUN mkdir -p /var/lib/redis \
     && useradd -r --uid 1001 --gid nodejs nextjs
 
 # 复制必要文件
+# Next.js standalone 模式的文件结构
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# 查找并确保 server.js 在正确位置
+# Next.js standalone 模式下，server.js 可能在根目录或 app 子目录
+RUN if [ -f ./app/server.js ] && [ ! -f ./server.js ]; then \
+        cp ./app/server.js ./server.js; \
+    fi && \
+    if [ ! -f ./server.js ]; then \
+        find . -name "server.js" -type f | head -1 | xargs -I {} cp {} ./server.js || true; \
+    fi
 
 # 复制启动脚本和 supervisor 配置
 COPY docker-entrypoint.sh /usr/local/bin/

@@ -6,6 +6,8 @@ export MONGODB_URI=${MONGODB_URI:-mongodb://localhost:27017/kerkerker}
 export REDIS_URL=${REDIS_URL:-redis://localhost:6379}
 export MONGODB_DB_NAME=${MONGODB_DB_NAME:-kerkerker}
 export NODE_ENV=${NODE_ENV:-production}
+export PORT=${PORT:-3000}
+export HOSTNAME=${HOSTNAME:-0.0.0.0}
 
 # 创建必要的目录
 mkdir -p /var/lib/redis
