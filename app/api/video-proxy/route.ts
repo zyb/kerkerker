@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 
 /**
  * 重写 m3u8 文件内容
- * 将所有资源 URL 替换为代理 URL
+ * 将所有相对URL转换为绝对URL（直接返回原始URL，不走代理，媒体资源支持跨域访问）
  */
 function rewriteM3U8(content: string, baseUrl: string, proxyOrigin: string): string {
   const lines = content.split('\n');
@@ -169,9 +169,8 @@ function rewriteM3U8(content: string, baseUrl: string, proxyOrigin: string): str
       if (uriMatch && uriMatch[1]) {
         const originalUri = uriMatch[1];
         const absoluteUri = resolveUrl(originalUri);
-        const proxiedUri = `${proxyOrigin}/api/video-proxy?url=${encodeURIComponent(absoluteUri)}`;
-        // 替换原始URI为代理URI
-        return line.replace(/URI=["']?[^"',]+["']?/, `URI="${proxiedUri}"`);
+        // 直接返回绝对URL，不走代理（媒体资源支持跨域访问）
+        return line.replace(/URI=["']?[^"',]+["']?/, `URI="${absoluteUri}"`);
       }
       return line;
     }
@@ -181,11 +180,10 @@ function rewriteM3U8(content: string, baseUrl: string, proxyOrigin: string): str
       return line;
     }
     
-    // 处理资源 URL（.ts 片段等）
+    // 处理资源 URL（.ts 片段等）- 直接返回绝对URL，不走代理
     const resourceUrl = resolveUrl(line.trim());
-    const proxiedUrl = `${proxyOrigin}/api/video-proxy?url=${encodeURIComponent(resourceUrl)}`;
     
-    return proxiedUrl;
+    return resourceUrl;
   });
   
   return rewrittenLines.join('\n');

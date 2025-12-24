@@ -15,8 +15,8 @@ export default function DoubanCard({ movie, onSelect, priority = false }: Douban
   const [imageError, setImageError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
  
-  // 豆瓣图片使用代理
-  const imageUrl = `/api/image-proxy?url=${encodeURIComponent(movie.cover)}`;
+  // 豆瓣图片直接使用原始URL（媒体资源支持跨域访问）
+  const imageUrl = movie.cover || '';
 
   return (
     <div

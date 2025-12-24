@@ -49,7 +49,8 @@ export function LocalHlsPlayer({
   const [error, setError] = useState<PlayerError | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [useDirectPlay, setUseDirectPlay] = useState(false);
+  // 默认使用直接播放模式，不走代理（媒体资源支持跨域访问）
+  const [useDirectPlay, setUseDirectPlay] = useState(true);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const artRef = useRef<Artplayer | null>(null);
@@ -83,14 +84,14 @@ export function LocalHlsPlayer({
     setIsClient(true);
   }, []);
 
-  // 获取代理后的URL
+  // 获取视频URL - 默认直接返回原始URL（媒体资源支持跨域访问）
   const getProxiedUrl = useCallback((url: string) => {
     if (!url) return '';
+    // 如果已经是代理URL，保持原样
     if (url.startsWith('/api/video-proxy/')) return url;
-    // 如果启用了直接播放模式，直接返回原始URL
-    if (useDirectPlay) return url;
-    return `/api/video-proxy/${encodeURIComponent(url)}`;
-  }, [useDirectPlay]);
+    // 默认直接返回原始URL，不走代理
+    return url;
+  }, []);
 
   // 设置错误状态
   const setPlayerError = useCallback((type: ErrorType, message: string, canRetry: boolean = false) => {

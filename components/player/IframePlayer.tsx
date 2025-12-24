@@ -85,7 +85,8 @@ export function IframePlayer({
   }, [vodSource, backupPlayers, disableParseUrl]);
 
   const currentPlayer = enabledPlayers[currentPlayerIndex];
-  // 如果禁用解析接口，直接使用原始视频链接；否则使用解析接口+视频链接
+  // 如果禁用解析接口，直接使用原始视频链接（不走代理，媒体资源支持跨域访问）
+  // 否则使用解析接口+视频链接（videoUrl 本身是原始URL，由第三方播放器处理）
   const playerUrl = disableParseUrl 
     ? videoUrl 
     : (currentPlayer ? currentPlayer.url + encodeURIComponent(videoUrl) : '');

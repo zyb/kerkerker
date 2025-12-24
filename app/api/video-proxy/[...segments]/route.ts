@@ -374,7 +374,7 @@ function isValidUrl(urlString: string): boolean {
   }
 }
 
-// 处理m3u8内容，转换相对路径为代理路径
+// 处理m3u8内容，转换相对路径为绝对路径（直接返回原始URL，不走代理，媒体资源支持跨域访问）
 function processM3u8Content(content: string, baseUrl: string): string {
   const lines = content.split('\n');
   const base = new URL(baseUrl);
@@ -382,8 +382,8 @@ function processM3u8Content(content: string, baseUrl: string): string {
   console.log('📝 processM3u8Content baseUrl:', baseUrl);
   console.log('📝 processM3u8Content base.href:', base.href);
   
-  // 辅助函数：解析并代理URL
-  const resolveAndProxy = (urlString: string): string => {
+  // 辅助函数：解析URL为绝对URL（不走代理）
+  const resolveUrl = (urlString: string): string => {
     try {
       let url: URL;
       if (urlString.startsWith('http://') || urlString.startsWith('https://')) {
@@ -391,7 +391,8 @@ function processM3u8Content(content: string, baseUrl: string): string {
       } else {
         url = new URL(urlString, base.href);
       }
-      return `/api/video-proxy/${encodeURIComponent(url.href)}`;
+      // 直接返回绝对URL，不走代理（媒体资源支持跨域访问）
+      return url.href;
     } catch (e) {
       console.error(`❌ URL解析失败: "${urlString}"`, e);
       return urlString;
@@ -404,9 +405,9 @@ function processM3u8Content(content: string, baseUrl: string): string {
       const uriMatch = line.match(/URI=["']?([^"',]+)["']?/);
       if (uriMatch && uriMatch[1]) {
         const originalUri = uriMatch[1];
-        const proxiedUri = resolveAndProxy(originalUri);
-        console.log(`🔑 密钥URI: "${originalUri}" => "${proxiedUri}"`);
-        return line.replace(/URI=["']?[^"',]+["']?/, `URI="${proxiedUri}"`);
+        const absoluteUri = resolveUrl(originalUri);
+        console.log(`🔑 密钥URI: "${originalUri}" => "${absoluteUri}"`);
+        return line.replace(/URI=["']?[^"',]+["']?/, `URI="${absoluteUri}"`);
       }
       return line;
     }
@@ -416,11 +417,11 @@ function processM3u8Content(content: string, baseUrl: string): string {
       return line;
     }
     
-    // 处理片段URL
+    // 处理片段URL - 直接返回绝对URL，不走代理
     const trimmedLine = line.trim();
-    const proxiedUrl = resolveAndProxy(trimmedLine);
-    console.log(`📝 片段: "${trimmedLine}" => "${proxiedUrl}"`);
-    return proxiedUrl;
+    const absoluteUrl = resolveUrl(trimmedLine);
+    console.log(`📝 片段: "${trimmedLine}" => "${absoluteUrl}"`);
+    return absoluteUrl;
   });
   
   return processedLines.join('\n');
