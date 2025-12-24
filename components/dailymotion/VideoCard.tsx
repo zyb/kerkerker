@@ -20,6 +20,7 @@ export function VideoCard({ video, onClick, formatTimeAgo }: VideoCardProps) {
           alt=""
           className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-60"
           aria-hidden="true"
+          referrerPolicy="no-referrer"
         />
         
         {/* Foreground: Original size thumbnail (centered) */}
@@ -29,6 +30,7 @@ export function VideoCard({ video, onClick, formatTimeAgo }: VideoCardProps) {
             alt={video.title}
             className="max-w-full max-h-full rounded-lg"
             style={{ objectFit: 'none' }}
+            referrerPolicy="no-referrer"
           />
         </div>
         

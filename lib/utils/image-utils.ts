@@ -14,3 +14,20 @@ export function getImageUrl(imageUrl: string): string {
   // 直接返回原始URL，不走代理（媒体资源支持跨域访问）
   return imageUrl;
 }
+
+/**
+ * 从资源URL中提取主站地址（用于设置Referer）
+ * 例如：https://example.com/path/image.jpg -> https://example.com/
+ */
+export function getResourceOrigin(imageUrl: string): string | null {
+  if (!imageUrl || imageUrl.trim() === '') {
+    return null;
+  }
+  
+  try {
+    const url = new URL(imageUrl);
+    return `${url.protocol}//${url.host}/`;
+  } catch {
+    return null;
+  }
+}

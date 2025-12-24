@@ -71,6 +71,7 @@ export function HeroBanner({ heroMovies, heroDataList, onMovieClick }: HeroBanne
                   loading={index === 0 ? "eager" : "lazy"}
                   fetchPriority={index === 0 ? "high" : "auto"}
                   decoding="async"
+                  referrerPolicy="no-referrer"
                   className="block md:hidden w-full h-full object-cover"
                 />
 
@@ -82,6 +83,7 @@ export function HeroBanner({ heroMovies, heroDataList, onMovieClick }: HeroBanne
                   loading={index === 0 ? "eager" : "lazy"}
                   fetchPriority={index === 0 ? "high" : "auto"}
                   decoding="async"
+                  referrerPolicy="no-referrer"
                   className="hidden md:block w-full h-full object-cover object-top"
                 />
 

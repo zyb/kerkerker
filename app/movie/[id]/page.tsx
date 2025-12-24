@@ -316,6 +316,7 @@ export default function MovieDetailPage() {
           src={getImageUrl(cover)}
           alt={title}
           className="absolute inset-0 w-full h-full object-cover opacity-20 blur-3xl scale-110"
+          referrerPolicy="no-referrer"
         />
         <div className="absolute inset-0 bg-linear-to-t from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent z-10" />
         <div className="absolute inset-0 bg-linear-to-r from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent z-10" />
@@ -421,6 +422,7 @@ export default function MovieDetailPage() {
                 src={getImageUrl(cover)}
                 alt={title}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
@@ -527,6 +529,7 @@ export default function MovieDetailPage() {
                           src={getImageUrl(photo.thumb || photo.image)}
                           alt="剧照"
                           className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
                         />
                       </a>
                     ))}
@@ -694,6 +697,7 @@ export default function MovieDetailPage() {
                       src={getImageUrl(rec.cover)}
                       alt={rec.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      referrerPolicy="no-referrer"
                     />
                   </div>
                   <h3 className="text-sm text-white font-medium line-clamp-1 group-hover:text-red-400 transition-colors">{rec.title}</h3>

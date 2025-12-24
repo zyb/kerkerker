@@ -35,6 +35,7 @@ export default function DoubanCard({ movie, onSelect, priority = false }: Douban
             fetchPriority={priority ? "high" : "auto"}
             // 提供尺寸提示，避免布局偏移
             decoding="async"
+            referrerPolicy="no-referrer"
             className={`w-full h-full object-cover transition-opacity duration-300 ${
               isLoading ? 'opacity-0' : 'opacity-100'
             }`}

@@ -160,6 +160,18 @@ export function LocalHlsPlayer({
         timersRef.current.forEach(timer => clearTimeout(timer));
         timersRef.current.clear();
 
+        // 从视频URL中提取主站地址，用于设置Referer
+        const getVideoOrigin = (url: string): string | null => {
+          try {
+            const urlObj = new URL(url);
+            return `${urlObj.protocol}//${urlObj.host}/`;
+          } catch {
+            return null;
+          }
+        };
+
+        const videoOrigin = getVideoOrigin(videoUrl);
+
         // HLS配置
         const hlsConfig = {
           debug: false,
@@ -188,6 +200,21 @@ export function LocalHlsPlayer({
           abrEwmaDefaultEstimate: 500000, // 默认带宽估计500kbps
           abrBandWidthFactor: 0.95,     // 带宽因子
           abrBandWidthUpFactor: 0.7,    // 升档因子
+
+          /* 请求头配置 - 设置Referer为资源主站地址 */
+          xhrSetup: (xhr: XMLHttpRequest, url: string) => {
+            // 为每个请求设置正确的Referer（使用资源的主站地址，而不是zeabur地址）
+            try {
+              const urlObj = new URL(url);
+              const origin = `${urlObj.protocol}//${urlObj.host}/`;
+              xhr.setRequestHeader('Referer', origin);
+            } catch (e) {
+              // 如果URL解析失败，使用视频URL的origin
+              if (videoOrigin) {
+                xhr.setRequestHeader('Referer', videoOrigin);
+              }
+            }
+          },
         };
 
         // 创建ArtPlayer实例
