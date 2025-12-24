@@ -122,35 +122,34 @@ async function searchSingleSource(
       area: item.vod_area,
       remarks: item.vod_remarks,
     }));
-      
-      // 优先精确匹配
-      let bestMatch = list.find(item => 
-        item.name.toLowerCase().trim() === title.toLowerCase().trim()
+    
+    // 优先精确匹配
+    let bestMatch = list.find(item => 
+      item.name.toLowerCase().trim() === title.toLowerCase().trim()
+    );
+    
+    // 其次包含匹配
+    if (!bestMatch) {
+      bestMatch = list.find(item =>
+        item.name.toLowerCase().includes(title.toLowerCase()) ||
+        title.toLowerCase().includes(item.name.toLowerCase())
       );
-      
-      // 其次包含匹配
-      if (!bestMatch) {
-        bestMatch = list.find(item =>
-          item.name.toLowerCase().includes(title.toLowerCase()) ||
-          title.toLowerCase().includes(item.name.toLowerCase())
-        );
-      }
-      
-      // 使用第一个结果
-      if (!bestMatch && list.length > 0) {
-        bestMatch = list[0];
-      }
-      
-      if (bestMatch) {
-        return {
-          source_key: source.key,
-          source_name: source.name,
-          vod_id: bestMatch.id,
-          vod_name: bestMatch.name,
-          match_confidence: getMatchConfidence(bestMatch.name, title),
-          priority: source.priority ?? 999,  // 未设置优先级的排在最后
-        };
-      }
+    }
+    
+    // 使用第一个结果
+    if (!bestMatch && list.length > 0) {
+      bestMatch = list[0];
+    }
+    
+    if (bestMatch) {
+      return {
+        source_key: source.key,
+        source_name: source.name,
+        vod_id: bestMatch.id,
+        vod_name: bestMatch.name,
+        match_confidence: getMatchConfidence(bestMatch.name, title),
+        priority: source.priority ?? 999,  // 未设置优先级的排在最后
+      };
     }
     
     return null;
