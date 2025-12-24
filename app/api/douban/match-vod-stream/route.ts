@@ -20,6 +20,24 @@ interface MatchResult {
   priority: number;  // 视频源优先级
 }
 
+// 外部API响应格式
+interface DramaListResponse {
+  code: number;
+  msg: string;
+  page: number;
+  pagecount: number;
+  limit: number;
+  total: number;
+  list: Array<{
+    vod_id: number;
+    vod_name: string;
+    type_name?: string;
+    vod_year?: string;
+    vod_area?: string;
+    vod_remarks?: string;
+  }>;
+}
+
 // 计算匹配置信度
 function getMatchConfidence(vodName: string, title: string): 'high' | 'medium' | 'low' {
   const normalizedVodName = vodName.toLowerCase().trim();
@@ -43,16 +61,30 @@ async function searchSingleSource(
   title: string
 ): Promise<MatchResult | null> {
   try {
-    // 使用 POST 请求，传递完整的 source 对象
-    const response = await fetch(`${origin}/api/drama/list`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        source: source,
-        page: 1,
-        limit: 20,
-        keyword: title,
-      }),
+    // 直接调用 drama/list API，不使用 origin（服务端直接调用）
+    // 构建 API 请求参数
+    const apiParams: Record<string, string> = {
+      ac: 'detail',
+      pg: '1',
+    };
+
+    // 如果有关键词，添加搜索参数
+    if (title) {
+      apiParams.wd = title;
+    }
+
+    // 构建查询字符串
+    const queryString = new URLSearchParams(apiParams).toString();
+    const apiUrl = `${source.api}?${queryString}`;
+
+    // 直接调用外部影视API，设置正确的Referer
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        // 设置Referer为资源主站地址，而不是zeabur地址
+        'Referer': new URL(source.api).origin + '/',
+      },
       signal: AbortSignal.timeout(10000), // 10秒超时
     });
     
@@ -60,11 +92,36 @@ async function searchSingleSource(
       return null;
     }
     
-    const result = await response.json();
+    // 读取响应文本
+    const responseText = await response.text();
     
-    if (result.code === 200 && result.data?.list?.length > 0) {
-      // 查找最匹配的结果
-      const list: VodItem[] = result.data.list;
+    // 如果是XML或HTML响应，直接返回空结果
+    if (responseText.startsWith('<?xml') || responseText.startsWith('<!DOCTYPE') || responseText.startsWith('<html')) {
+      return null;
+    }
+    
+    // 解析JSON
+    let data: DramaListResponse;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      return null;
+    }
+    
+    // 检查API响应
+    if (data.code !== 1 || !data.list || data.list.length === 0) {
+      return null;
+    }
+    
+    // 查找最匹配的结果
+    const list: VodItem[] = data.list.map(item => ({
+      id: item.vod_id,
+      name: item.vod_name,
+      type_name: item.type_name,
+      year: item.vod_year,
+      area: item.vod_area,
+      remarks: item.vod_remarks,
+    }));
       
       // 优先精确匹配
       let bestMatch = list.find(item => 
