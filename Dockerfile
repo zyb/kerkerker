@@ -59,6 +59,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 
+# TMDB API 配置（默认值，可通过环境变量覆盖）
+# TMDB_API_KEY 默认为空，需要用户自行配置
+ENV TMDB_API_KEY=
+ENV TMDB_BASE_URL=https://api.themoviedb.org/3
+
 # 创建必要的目录和用户
 RUN mkdir -p /var/lib/redis \
     && mkdir -p /var/log/supervisor \
