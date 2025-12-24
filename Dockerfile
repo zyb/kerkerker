@@ -28,7 +28,20 @@ ENV NODE_ENV=production
 RUN npm run build
 
 # ==================== 阶段 3: 运行应用 ====================
-FROM node:20-alpine AS runner
+# 使用 MongoDB 官方镜像作为基础，然后安装 Node.js
+FROM mongo:7 AS mongo-base
+
+# 安装 Node.js 20、Redis 和 supervisor
+RUN apt-get update && \
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y \
+    nodejs \
+    redis-server \
+    supervisor \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM mongo-base AS runner
 WORKDIR /app
 
 # 设置环境变量
@@ -36,27 +49,37 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV HOSTNAME=0.0.0.0
 
-# 创建非 root 用户
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# 创建必要的目录和用户
+RUN mkdir -p /var/lib/redis \
+    && mkdir -p /var/log/supervisor \
+    && mkdir -p /data/db \
+    && mkdir -p /data/configdb \
+    && (groupadd -r redis 2>/dev/null || true) \
+    && (useradd -r -g redis -u 999 redis 2>/dev/null || true) \
+    && groupadd -r --gid 1001 nodejs \
+    && useradd -r --uid 1001 --gid nodejs nextjs
 
 # 复制必要文件
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# 复制启动脚本和 supervisor 配置
+COPY docker-entrypoint.sh /usr/local/bin/
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # 设置权限
-RUN chown -R nextjs:nodejs /app
+RUN chown -R nextjs:nodejs /app && \
+    chown -R redis:redis /var/lib/redis 2>/dev/null || true && \
+    chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# 切换用户
-USER nextjs
-
-# 暴露端口
+# 暴露端口（只暴露主服务端口）
 EXPOSE 3000
 
 # 设置健康检查（禁用代理）
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD NO_PROXY=localhost node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# 启动应用
-CMD ["node", "server.js"]
+# 使用启动脚本
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
