@@ -1,14 +1,29 @@
 import { NextRequest } from 'next/server';
 import { getVodSourcesFromDB } from '@/lib/vod-sources-db';
 import { VodSource } from '@/types/drama';
+import { cleanTitleForSearch } from '@/lib/utils/title-utils';
 
-interface VodItem {
-  id: string | number;
-  name: string;
-  type_name?: string;
-  year?: string | number;
-  area?: string;
-  remarks?: string;
+interface DramaListResponse {
+  code: number;
+  msg: string;
+  list: Array<{
+    vod_id: number;
+    vod_name: string;
+    vod_pic?: string;
+    vod_remarks?: string;
+    type_name?: string;
+    vod_time?: string;
+    vod_play_from?: string;
+    vod_sub?: string;
+    vod_actor?: string;
+    vod_director?: string;
+    vod_area?: string;
+    vod_year?: string;
+    vod_score?: string;
+    vod_total?: number;
+    vod_blurb?: string;
+    vod_class?: string;
+  }>;
 }
 
 interface MatchResult {
@@ -36,68 +51,80 @@ function getMatchConfidence(vodName: string, title: string): 'high' | 'medium' |
   return 'low';
 }
 
-// 搜索单个视频源
+// 搜索单个视频源（参考 search-stream 的实现，直接调用视频源 API）
 async function searchSingleSource(
-  origin: string,
   source: VodSource,
-  title: string
+  keyword: string
 ): Promise<MatchResult | null> {
   try {
-    // 使用 POST 请求，传递完整的 source 对象
-    const response = await fetch(`${origin}/api/drama/list`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        source: source,
-        page: 1,
-        limit: 20,
-        keyword: title,
-      }),
-      signal: AbortSignal.timeout(10000), // 10秒超时
+    // 构建 API 请求参数（参考 search-stream）
+    const apiParams = new URLSearchParams({
+      ac: 'detail',
+      pg: '1',
+      wd: keyword,
     });
     
+    const apiUrl = `${source.api}?${apiParams.toString()}`;
+    
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(15000),
+    });
+
     if (!response.ok) {
+      console.log(`  ⚠️ ${source.name} API请求失败: HTTP ${response.status}`);
       return null;
     }
+
+    const data: DramaListResponse = await response.json();
+
+    if (data.code !== 1) {
+      console.log(`  ⚠️ ${source.name} API返回错误: ${data.msg || '未知错误'}`);
+      return null;
+    }
+
+    const list = data.list || [];
     
-    const result = await response.json();
+    if (list.length === 0) {
+      return null;
+    }
+
+    // 查找最匹配的结果
+    const normalizedKeyword = keyword.toLowerCase().trim();
     
-    if (result.code === 200 && result.data?.list?.length > 0) {
-      // 查找最匹配的结果
-      const list: VodItem[] = result.data.list;
-      
-      // 优先精确匹配
-      let bestMatch = list.find(item => 
-        item.name.toLowerCase().trim() === title.toLowerCase().trim()
+    // 优先精确匹配
+    let bestMatch = list.find(item => 
+      item.vod_name.toLowerCase().trim() === normalizedKeyword
+    );
+    
+    // 其次包含匹配
+    if (!bestMatch) {
+      bestMatch = list.find(item =>
+        item.vod_name.toLowerCase().includes(normalizedKeyword) ||
+        normalizedKeyword.includes(item.vod_name.toLowerCase())
       );
-      
-      // 其次包含匹配
-      if (!bestMatch) {
-        bestMatch = list.find(item =>
-          item.name.toLowerCase().includes(title.toLowerCase()) ||
-          title.toLowerCase().includes(item.name.toLowerCase())
-        );
-      }
-      
-      // 使用第一个结果
-      if (!bestMatch && list.length > 0) {
-        bestMatch = list[0];
-      }
-      
-      if (bestMatch) {
-        return {
-          source_key: source.key,
-          source_name: source.name,
-          vod_id: bestMatch.id,
-          vod_name: bestMatch.name,
-          match_confidence: getMatchConfidence(bestMatch.name, title),
-          priority: source.priority ?? 999,  // 未设置优先级的排在最后
-        };
-      }
+    }
+    
+    // 使用第一个结果
+    if (!bestMatch && list.length > 0) {
+      bestMatch = list[0];
+    }
+    
+    if (bestMatch) {
+      return {
+        source_key: source.key,
+        source_name: source.name,
+        vod_id: bestMatch.vod_id,
+        vod_name: bestMatch.vod_name,
+        match_confidence: getMatchConfidence(bestMatch.vod_name, keyword),
+        priority: source.priority ?? 999,  // 未设置优先级的排在最后
+      };
     }
     
     return null;
-  } catch {
+  } catch (error) {
+    console.error(`  ❌ ${source.name} 搜索出错:`, error instanceof Error ? error.message : error);
     return null;
   }
 }
@@ -111,14 +138,18 @@ export async function GET(request: NextRequest) {
     return new Response('Missing title parameter', { status: 400 });
   }
   
+  // 清理标题（移除年份、副标题等，提高搜索匹配率）
+  const cleanedTitle = cleanTitleForSearch(title);
+  console.log(`\n🔍 开始流式搜索视频源:`);
+  console.log(`  原始标题: ${title}`);
+  console.log(`  清理后标题: ${cleanedTitle}`);
+  
   // 获取所有视频源
   const allSources = await getVodSourcesFromDB();
   
   if (allSources.length === 0) {
     return new Response('No video sources configured', { status: 404 });
   }
-  
-  const origin = request.nextUrl.origin;
   
   // 创建 SSE 流
   const encoder = new TextEncoder();
@@ -129,11 +160,10 @@ export async function GET(request: NextRequest) {
         type: 'init',
         doubanId,
         title,
+        cleanedTitle,
         totalSources: allSources.length,
       };
       controller.enqueue(encoder.encode(`data: ${JSON.stringify(initData)}\n\n`));
-      
-      console.log(`\n🔍 开始流式搜索视频源: ${title}`);
       
       let completedCount = 0;
       let foundCount = 0;
@@ -141,12 +171,13 @@ export async function GET(request: NextRequest) {
       // 并行搜索所有源，但每个完成后立即发送结果
       const promises = allSources.map(async (source) => {
         try {
-          const result = await searchSingleSource(origin, source, title);
+          // 使用清理后的标题搜索
+          const result = await searchSingleSource(source, cleanedTitle);
           completedCount++;
           
           if (result) {
             foundCount++;
-            console.log(`  ✅ ${source.name} 找到: ${result.vod_name}`);
+            console.log(`  ✅ ${source.name} 找到: ${result.vod_name} (置信度: ${result.match_confidence})`);
           } else {
             console.log(`  ❌ ${source.name} 未找到`);
           }
@@ -163,7 +194,7 @@ export async function GET(request: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(resultData)}\n\n`));
         } catch (error) {
           completedCount++;
-          console.error(`  ❌ ${source.name} 搜索出错:`, error);
+          console.error(`  ❌ ${source.name} 搜索出错:`, error instanceof Error ? error.message : error);
           
           // 发送错误结果
           const errorData = {
@@ -181,7 +212,7 @@ export async function GET(request: NextRequest) {
       // 等待所有搜索完成
       await Promise.all(promises);
       
-      console.log(`\n📊 搜索完成: 找到 ${foundCount} 个可用源\n`);
+      console.log(`\n📊 搜索完成: 找到 ${foundCount}/${allSources.length} 个可用源\n`);
       
       // 发送完成信号
       const doneData = {
